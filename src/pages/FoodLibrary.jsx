@@ -83,36 +83,55 @@ export const FoodLibrary = () => {
           {activeTab === 'proteins' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {foodLibrary.proteins.map((food, idx) => (
-                <GlassCard key={food.name} delay={idx * 0.04} className="border hover:border-luxuryGold/10" hoverEffect={true}>
-                  <div className="flex justify-between items-start mb-4">
+                <GlassCard key={food.name} delay={idx * 0.04} className="border hover:border-luxuryGold/10 p-0! overflow-hidden flex flex-col sm:flex-row h-full" hoverEffect={true}>
+                  
+                  {/* Food Image */}
+                  <div className="w-full sm:w-[130px] h-32 sm:h-full min-h-[120px] relative overflow-hidden shrink-0">
+                    <img 
+                      src={food.image} 
+                      alt={food.name} 
+                      className="w-full h-full object-cover filter brightness-90"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-darkBg via-darkBg/10 to-transparent" />
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-5 flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-white tracking-tight">{food.name}</h3>
-                      <span className="text-xs text-white/40 font-mono">Serving: {food.servingSize}</span>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="text-base font-bold text-white tracking-tight leading-tight">{food.name}</h3>
+                          <span className="text-[10px] text-white/40 font-mono">Serving: {food.servingSize}</span>
+                        </div>
+                        
+                        {/* Protein indicator badge */}
+                        <div className="bg-luxuryGold/10 border border-luxuryGold/20 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold text-luxuryGold shrink-0 ml-2">
+                          {food.protein} Pro
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-[11px] mb-2">
+                        {/* Cost rating */}
+                        <div className="flex items-center space-x-2 text-white/60">
+                          <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Cost Profile: <span className="font-semibold text-white">{food.cost}</span></span>
+                        </div>
+                        {/* Calories */}
+                        <div className="flex items-center space-x-2 text-white/60">
+                          <Flame className="w-3.5 h-3.5 text-orange-400" />
+                          <span>Caloric Value: <span className="font-semibold text-white">~{food.calories} kcal</span></span>
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Protein indicator badge */}
-                    <div className="bg-luxuryGold/10 border border-luxuryGold/20 px-3 py-1 rounded-full text-xs font-mono font-bold text-luxuryGold">
-                      {food.protein} Pro
+
+                    {/* Best Use */}
+                    <div className="bg-white/[0.02] border border-white/5 rounded-lg p-2.5 mt-2">
+                      <span className="text-[9px] text-luxuryGold font-mono uppercase tracking-wider block mb-0.5">Optimal Intake:</span>
+                      <p className="text-white/70 leading-relaxed font-light text-[10.5px]">{food.bestUse}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-3.5 text-xs">
-                    {/* Cost rating */}
-                    <div className="flex items-center space-x-2 text-white/60">
-                      <DollarSign className="w-4 h-4 text-emerald-400" />
-                      <span>Cost Profile: <span className="font-semibold text-white">{food.cost}</span></span>
-                    </div>
-                    {/* Calories */}
-                    <div className="flex items-center space-x-2 text-white/60">
-                      <Flame className="w-4 h-4 text-orange-400" />
-                      <span>Caloric Value: <span className="font-semibold text-white">~{food.calories} kcal</span></span>
-                    </div>
-                    {/* Best Use */}
-                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 mt-1">
-                      <span className="text-[10px] text-luxuryGold font-mono uppercase tracking-wider block mb-1">Optimal Intake Guidance:</span>
-                      <p className="text-white/70 leading-relaxed font-light font-sans">{food.bestUse}</p>
-                    </div>
-                  </div>
                 </GlassCard>
               ))}
             </div>
@@ -122,31 +141,50 @@ export const FoodLibrary = () => {
           {activeTab === 'carbs' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {foodLibrary.carbs.map((food, idx) => (
-                <GlassCard key={food.name} delay={idx * 0.04} className="border hover:border-rose-400/10" hoverEffect={true}>
-                  <div className="flex justify-between items-start mb-4">
+                <GlassCard key={food.name} delay={idx * 0.04} className="border hover:border-rose-400/10 p-0! overflow-hidden flex flex-col sm:flex-row h-full" hoverEffect={true}>
+                  
+                  {/* Food Image */}
+                  <div className="w-full sm:w-[130px] h-32 sm:h-full min-h-[120px] relative overflow-hidden shrink-0">
+                    <img 
+                      src={food.image} 
+                      alt={food.name} 
+                      className="w-full h-full object-cover filter brightness-90"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-darkBg via-darkBg/10 to-transparent" />
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-5 flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-white tracking-tight">{food.name}</h3>
-                      <span className="text-xs text-white/40 font-mono">Quantity: {food.quantity}</span>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="text-base font-bold text-white tracking-tight leading-tight">{food.name}</h3>
+                          <span className="text-[10px] text-white/40 font-mono">Quantity: {food.quantity}</span>
+                        </div>
+                        
+                        {/* Calorie badge */}
+                        <div className="bg-rose-400/10 border border-rose-400/20 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold text-rose-400 shrink-0 ml-2">
+                          {food.calories}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-[11px] mb-2">
+                        {/* Carbs breakdown */}
+                        <div className="flex items-center space-x-2 text-white/60">
+                          <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Carb Payload: <span className="font-semibold text-white">{food.carbs}</span></span>
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Calorie badge */}
-                    <div className="bg-rose-400/10 border border-rose-400/20 px-3 py-1 rounded-full text-xs font-mono font-bold text-rose-400">
-                      {food.calories}
+
+                    {/* Best Time */}
+                    <div className="bg-white/[0.02] border border-white/5 rounded-lg p-2.5 mt-2">
+                      <span className="text-[9px] text-rose-400 font-mono uppercase tracking-wider block mb-0.5">Ideal Timing:</span>
+                      <p className="text-white/70 leading-relaxed font-light text-[10.5px]">{food.bestTime}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-3.5 text-xs">
-                    {/* Carbs breakdown */}
-                    <div className="flex items-center space-x-2 text-white/60">
-                      <TrendingUp className="w-4 h-4 text-cyan-400" />
-                      <span>Carb Payload: <span className="font-semibold text-white">{food.carbs}</span></span>
-                    </div>
-                    {/* Best Time */}
-                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 mt-1">
-                      <span className="text-[10px] text-rose-400 font-mono uppercase tracking-wider block mb-1">Ideal Timing:</span>
-                      <p className="text-white/70 leading-relaxed font-light font-sans">{food.bestTime}</p>
-                    </div>
-                  </div>
                 </GlassCard>
               ))}
             </div>
