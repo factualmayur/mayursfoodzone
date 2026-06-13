@@ -5,37 +5,87 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   // Configurable targets
-  const [targets, setTargets] = useState({
-    calories: 2000,
-    protein: 120, // 120g target
-    carbs: 250,
-    water: 3000, // 3000ml target
+  const [targets, setTargets] = useState(() => {
+    const saved = localStorage.getItem('aura_targets');
+    return saved ? JSON.parse(saved) : {
+      calories: 2000,
+      protein: 120, // 120g target
+      carbs: 250,
+      water: 3000, // 3000ml target
+    };
   });
 
   // Checklist of protein sources consumed today
-  const [proteinChecklist, setProteinChecklist] = useState([
-    { id: 1, name: 'Skimmed Milk (250ml)', protein: 9, checked: true },
-    { id: 2, name: 'Low Fat Paneer (100g)', protein: 20, checked: true },
-    { id: 3, name: 'Yellow Moong Dal (50g)', protein: 12, checked: true },
-    { id: 4, name: 'Artisan Oats Bowl', protein: 18, checked: false },
-    { id: 5, name: 'Soya Chunks (50g)', protein: 26, checked: false },
-    { id: 6, name: 'Whole Eggs (3)', protein: 18, checked: false },
-  ]);
+  const [proteinChecklist, setProteinChecklist] = useState(() => {
+    const saved = localStorage.getItem('aura_proteinChecklist');
+    return saved ? JSON.parse(saved) : [
+      { id: 1, name: 'Skimmed Milk (250ml)', protein: 9, checked: true },
+      { id: 2, name: 'Low Fat Paneer (100g)', protein: 20, checked: true },
+      { id: 3, name: 'Yellow Moong Dal (50g)', protein: 12, checked: true },
+      { id: 4, name: 'Artisan Oats Bowl', protein: 18, checked: false },
+      { id: 5, name: 'Soya Chunks (50g)', protein: 26, checked: false },
+      { id: 6, name: 'Whole Eggs (3)', protein: 18, checked: false },
+    ];
+  });
 
   // Pre-workout items consumed today
-  const [preWorkout, setPreWorkout] = useState(['Banana']); // Banana is active by default
+  const [preWorkout, setPreWorkout] = useState(() => {
+    const saved = localStorage.getItem('aura_preWorkout');
+    return saved ? JSON.parse(saved) : ['Banana']; // Banana is active by default
+  });
 
   // Post-workout recovery shake consumed today
-  const [postWorkout, setPostWorkout] = useState(true); // Recovery Shake active by default
+  const [postWorkout, setPostWorkout] = useState(() => {
+    const saved = localStorage.getItem('aura_postWorkout');
+    return saved ? JSON.parse(saved) : true; // Recovery Shake active by default
+  });
 
   // Water intake in ml
-  const [waterIntake, setWaterIntake] = useState(1750); // Starts at 1750ml
+  const [waterIntake, setWaterIntake] = useState(() => {
+    const saved = localStorage.getItem('aura_waterIntake');
+    return saved ? JSON.parse(saved) : 1750; // Starts at 1750ml
+  });
 
   // Fruit intake servings
-  const [fruitIntake, setFruitIntake] = useState(1); // Starts at 1 serving
+  const [fruitIntake, setFruitIntake] = useState(() => {
+    const saved = localStorage.getItem('aura_fruitIntake');
+    return saved ? JSON.parse(saved) : 1; // Starts at 1 serving
+  });
 
   // Weekly Planner state
-  const [planner, setPlanner] = useState(initialPlanner);
+  const [planner, setPlanner] = useState(() => {
+    const saved = localStorage.getItem('aura_planner');
+    return saved ? JSON.parse(saved) : initialPlanner;
+  });
+
+  // Sync state modifications to localStorage
+  useEffect(() => {
+    localStorage.setItem('aura_targets', JSON.stringify(targets));
+  }, [targets]);
+
+  useEffect(() => {
+    localStorage.setItem('aura_proteinChecklist', JSON.stringify(proteinChecklist));
+  }, [proteinChecklist]);
+
+  useEffect(() => {
+    localStorage.setItem('aura_preWorkout', JSON.stringify(preWorkout));
+  }, [preWorkout]);
+
+  useEffect(() => {
+    localStorage.setItem('aura_postWorkout', JSON.stringify(postWorkout));
+  }, [postWorkout]);
+
+  useEffect(() => {
+    localStorage.setItem('aura_waterIntake', JSON.stringify(waterIntake));
+  }, [waterIntake]);
+
+  useEffect(() => {
+    localStorage.setItem('aura_fruitIntake', JSON.stringify(fruitIntake));
+  }, [fruitIntake]);
+
+  useEffect(() => {
+    localStorage.setItem('aura_planner', JSON.stringify(planner));
+  }, [planner]);
 
   // Calculate current total protein consumed dynamically
   const [currentProtein, setCurrentProtein] = useState(67);
