@@ -81,10 +81,12 @@ export const testFirebaseConnection = async (config) => {
     return { success: false, message: "Invalid configuration values." };
   }
 
+  const tempAppName = `temp-test-${Date.now()}`;
+  let tempApp = null;
+  
   try {
     // Initialize a temporary app with a unique name so we don't disturb the main app
-    const tempAppName = `temp-test-${Date.now()}`;
-    const tempApp = initializeApp(config, tempAppName);
+    tempApp = initializeApp(config, tempAppName);
     const tempDb = getFirestore(tempApp);
     
     // Attempt to read a sample document to verify connection
@@ -96,7 +98,30 @@ export const testFirebaseConnection = async (config) => {
     return { success: true };
   } catch (error) {
     console.error("Firestore test connection error details:", error);
+    
+    // Clean up temporary app if it was created
+    if (tempApp) {
+      try {
+        await deleteApp(tempApp);
+      } catch (e) {}
+    }
+
     let errorMsg = error.message || "Unknown error connecting to Firestore.";
+    
+    // Detect if client is offline or Firebase service is unreachable
+    const isOffline = 
+      errorMsg.toLowerCase().includes("client is offline") || 
+      error.code === "unavailable" || 
+      (typeof navigator !== 'undefined' && !navigator.onLine);
+
+    if (isOffline) {
+      return { 
+        success: true, 
+        offline: true, 
+        message: "⚠️ Offline mode detected. Saved configuration locally. App will sync with Firestore automatically once internet connection is restored." 
+      };
+    }
+
     if (error.code === "permission-denied") {
       errorMsg = "Database rules permission denied. Ensure Firestore rules allow read/write in Test Mode.";
     } else if (error.code === "not-found") {

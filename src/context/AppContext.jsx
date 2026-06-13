@@ -194,8 +194,17 @@ export const AppProvider = ({ children }) => {
     setActiveConfig(config);
     setSyncId(newSyncId);
     setCurrentDb(newDb);
-    setDbStatus(newDb ? 'connected' : 'local');
+    
+    if (testResult.offline) {
+      setDbStatus('disconnected');
+      return { 
+        success: true, 
+        offline: true, 
+        message: testResult.message 
+      };
+    }
 
+    setDbStatus(newDb ? 'connected' : 'local');
     return { success: true };
   };
 

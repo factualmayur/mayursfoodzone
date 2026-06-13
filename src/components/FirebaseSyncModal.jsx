@@ -135,8 +135,14 @@ export const FirebaseSyncModal = ({ isOpen, onClose }) => {
 
     setIsTesting(false);
     if (result.success) {
-      setSuccessMessage('✓ Connected successfully! Data synced to cloud.');
-      setTab('status');
+      setSuccessMessage(result.message || '✓ Connected successfully! Data synced to cloud.');
+      if (result.offline) {
+        setErrorMessage('');
+      } else {
+        setTimeout(() => {
+          setTab('status');
+        }, 1500);
+      }
     } else {
       setErrorMessage(result.message || 'Failed to connect. Please check credentials and security rules.');
     }
