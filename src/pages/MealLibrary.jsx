@@ -115,7 +115,7 @@ export const MealLibrary = () => {
                       <img 
                         src={meal.image} 
                         alt={meal.name} 
-                        className="w-full h-full object-cover transition-transform duration-500 will-change-transform transform-gpu group-hover:scale-105 filter brightness-90 group-hover:brightness-100"
+                        className="w-full h-full object-cover filter brightness-90 group-hover:brightness-100 transition-all duration-300"
                         loading="lazy"
                       />
                       
