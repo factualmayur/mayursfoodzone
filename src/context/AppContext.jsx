@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { initialPlanner } from '../data/initialPlanner';
+import { db, isFirebaseConfigured } from '../firebase/config';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export const AppContext = createContext();
 
@@ -58,34 +60,68 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : initialPlanner;
   });
 
-  // Sync state modifications to localStorage
+  // 1. Mount Effect: Fetch cloud data from Firestore if configured
   useEffect(() => {
-    localStorage.setItem('aura_targets', JSON.stringify(targets));
-  }, [targets]);
+    if (!isFirebaseConfigured || !db) return;
 
-  useEffect(() => {
-    localStorage.setItem('aura_proteinChecklist', JSON.stringify(proteinChecklist));
-  }, [proteinChecklist]);
+    const fetchCloudData = async () => {
+      try {
+        const docRef = doc(db, "user_data", "dashboard_state");
+        const docSnap = await getDoc(docRef);
 
-  useEffect(() => {
-    localStorage.setItem('aura_preWorkout', JSON.stringify(preWorkout));
-  }, [preWorkout]);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.targets) setTargets(data.targets);
+          if (data.proteinChecklist) setProteinChecklist(data.proteinChecklist);
+          if (data.preWorkout) setPreWorkout(data.preWorkout);
+          if (data.postWorkout) setPostWorkout(data.postWorkout);
+          if (data.waterIntake) setWaterIntake(data.waterIntake);
+          if (data.fruitIntake) setFruitIntake(data.fruitIntake);
+          if (data.planner) setPlanner(data.planner);
+          console.log("✓ Cloud database loaded successfully.");
+        } else {
+          console.log("No cloud data found. Creating default document in Firestore...");
+          await setDoc(docRef, {
+            targets,
+            proteinChecklist,
+            preWorkout,
+            postWorkout,
+            waterIntake,
+            fruitIntake,
+            planner
+          });
+        }
+      } catch (err) {
+        console.error("Error reading from Firestore:", err);
+      }
+    };
 
-  useEffect(() => {
-    localStorage.setItem('aura_postWorkout', JSON.stringify(postWorkout));
-  }, [postWorkout]);
+    fetchCloudData();
+  }, [db]);
 
+  // 2. Sync Effect: Save local states to Firestore (or LocalStorage as fallback)
   useEffect(() => {
-    localStorage.setItem('aura_waterIntake', JSON.stringify(waterIntake));
-  }, [waterIntake]);
-
-  useEffect(() => {
-    localStorage.setItem('aura_fruitIntake', JSON.stringify(fruitIntake));
-  }, [fruitIntake]);
-
-  useEffect(() => {
-    localStorage.setItem('aura_planner', JSON.stringify(planner));
-  }, [planner]);
+    if (isFirebaseConfigured && db) {
+      const docRef = doc(db, "user_data", "dashboard_state");
+      setDoc(docRef, {
+        targets,
+        proteinChecklist,
+        preWorkout,
+        postWorkout,
+        waterIntake,
+        fruitIntake,
+        planner
+      }, { merge: true }).catch(err => console.error("Error writing to Firestore:", err));
+    } else {
+      localStorage.setItem('aura_targets', JSON.stringify(targets));
+      localStorage.setItem('aura_proteinChecklist', JSON.stringify(proteinChecklist));
+      localStorage.setItem('aura_preWorkout', JSON.stringify(preWorkout));
+      localStorage.setItem('aura_postWorkout', JSON.stringify(postWorkout));
+      localStorage.setItem('aura_waterIntake', JSON.stringify(waterIntake));
+      localStorage.setItem('aura_fruitIntake', JSON.stringify(fruitIntake));
+      localStorage.setItem('aura_planner', JSON.stringify(planner));
+    }
+  }, [targets, proteinChecklist, preWorkout, postWorkout, waterIntake, fruitIntake, planner, db]);
 
   // Calculate current total protein consumed dynamically
   const [currentProtein, setCurrentProtein] = useState(67);
