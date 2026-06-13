@@ -111,16 +111,16 @@ export const MealLibrary = () => {
                   >
                     
                     {/* Food Image header */}
-                    <div className="h-44 w-full overflow-hidden relative group">
+                    <div className="h-44 w-full overflow-hidden relative group isolate transform-gpu">
                       <img 
                         src={meal.image} 
                         alt={meal.name} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter brightness-90 group-hover:brightness-100"
+                        className="w-full h-full object-cover transition-transform duration-500 will-change-transform transform-gpu group-hover:scale-105 filter brightness-90 group-hover:brightness-100"
                         loading="lazy"
                       />
                       
                       {/* Dark overlay gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-darkBg via-darkBg/30 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-darkBg via-darkBg/30 to-transparent pointer-events-none z-10" />
                       
                       {/* Floating protein badge */}
                       <div className="absolute top-4 right-4 flex items-center space-x-1 bg-darkBg/80 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full text-xs font-semibold text-luxuryGold font-mono">
