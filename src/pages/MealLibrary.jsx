@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { mealLibrary } from '../data/mealLibrary';
+import { AppContext } from '../context/AppContext';
+import { CreateRecipeModal } from '../components/CreateRecipeModal';
 import { GlassCard } from '../components/GlassCard';
-import { Clock, Dumbbell, Sparkles, ChefHat, ChevronDown, ChevronUp, Search, Info } from 'lucide-react';
+import { Clock, Dumbbell, Sparkles, ChefHat, ChevronDown, ChevronUp, Search, Info, Plus } from 'lucide-react';
 
 export const MealLibrary = () => {
+  const { meals } = useContext(AppContext);
   const [activeCategory, setActiveCategory] = useState('breakfast');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedId, setExpandedId] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const categories = [
     { id: 'breakfast', label: 'Breakfast Collections' },
@@ -19,7 +22,7 @@ export const MealLibrary = () => {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  const filteredMeals = mealLibrary[activeCategory].filter(meal =>
+  const filteredMeals = (meals[activeCategory] || []).filter(meal =>
     meal.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     meal.ingredients.some(ing => ing.toLowerCase().includes(searchQuery.toLowerCase()))
   );
@@ -37,7 +40,7 @@ export const MealLibrary = () => {
           <div className="flex items-center space-x-2 mb-1">
             <ChefHat className="w-5 h-5 text-luxuryGold" />
             <span className="text-xs text-luxuryGold font-semibold uppercase tracking-widest font-mono">
-              La Carte de Aura
+              La Carte de Mayur
             </span>
           </div>
           <h2 className="text-3xl font-extrabold tracking-tight text-white">
@@ -48,16 +51,28 @@ export const MealLibrary = () => {
           </p>
         </div>
 
-        {/* Search bar */}
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3.5 top-3 w-4 h-4 text-white/40" />
-          <input
-            type="text"
-            placeholder="Search by meal or ingredient..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/35 focus:outline-none focus:border-luxuryGold/40 transition-all focus:ring-1 focus:ring-luxuryGold/20"
-          />
+        {/* Action Controls */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          {/* Create Button */}
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center justify-center space-x-2 bg-luxuryGold hover:bg-amber-500 text-darkBg text-xs font-bold px-4.5 py-2.5 rounded-xl transition-all shadow-lg shadow-luxuryGold/10 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Create Custom Recipe</span>
+          </button>
+
+          {/* Search bar */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3.5 top-3 w-4 h-4 text-white/40" />
+            <input
+              type="text"
+              placeholder="Search by meal or ingredient..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/35 focus:outline-none focus:border-luxuryGold/40 transition-all focus:ring-1 focus:ring-luxuryGold/20 font-sans"
+            />
+          </div>
         </div>
       </div>
 
@@ -122,10 +137,17 @@ export const MealLibrary = () => {
                       {/* Dark overlay gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-darkBg via-darkBg/30 to-transparent pointer-events-none z-10" />
                       
-                      {/* Floating protein badge */}
-                      <div className="absolute top-4 right-4 flex items-center space-x-1 bg-darkBg/80 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full text-xs font-semibold text-luxuryGold font-mono">
-                        <Dumbbell className="w-3.5 h-3.5" />
-                        <span>{meal.protein} Protein</span>
+                      {/* Floating protein & custom badge */}
+                      <div className="absolute top-4 right-4 flex items-center space-x-2">
+                        {meal.isCustom && (
+                          <span className="bg-luxuryGold text-darkBg px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider font-mono shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                            Custom
+                          </span>
+                        )}
+                        <div className="flex items-center space-x-1 bg-darkBg/80 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full text-xs font-semibold text-luxuryGold font-mono">
+                          <Dumbbell className="w-3.5 h-3.5" />
+                          <span>{meal.protein} Protein</span>
+                        </div>
                       </div>
 
                       {/* Cook time badge */}
@@ -231,6 +253,14 @@ export const MealLibrary = () => {
           <p className="text-xs text-white/40">Try searching for other ingredients or meals.</p>
         </div>
       )}
+
+      {/* Dynamic Recipe Creation Modal */}
+      <CreateRecipeModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        activeCategory={activeCategory}
+      />
+
     </motion.div>
   );
 };

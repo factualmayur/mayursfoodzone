@@ -23,7 +23,7 @@ export const Navigation = ({ activeTab, setActiveTab }) => {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-wider bg-gradient-to-r from-white via-white/80 to-luxuryGold bg-clip-text text-transparent">
-              AURA
+              MAYUR'S
             </h1>
             <p className="text-[10px] text-white/40 uppercase tracking-widest leading-none">
               NUTRITION LAB

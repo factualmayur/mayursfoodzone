@@ -1,7 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppContext } from '../context/AppContext';
-import { mealLibrary } from '../data/mealLibrary';
 import { GlassCard } from '../components/GlassCard';
 import { 
   Calendar, 
@@ -13,11 +12,15 @@ import {
   Leaf, 
   Egg, 
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Trash2,
+  Copy,
+  Check,
+  Plus
 } from 'lucide-react';
 
 export const WeeklyPlanner = () => {
-  const { planner, updatePlannerDay } = useContext(AppContext);
+  const { planner, updatePlannerDay, meals } = useContext(AppContext);
   const [editingDay, setEditingDay] = useState(null);
 
   // Form states
@@ -27,6 +30,13 @@ export const WeeklyPlanner = () => {
   const [dinner, setDinner] = useState('');
   const [fruit, setFruit] = useState('');
   const [vegMethod, setVegMethod] = useState('');
+
+  // Grocery checklist states
+  const [isGroceryOpen, setIsGroceryOpen] = useState(false);
+  const [checkedStatus, setCheckedStatus] = useState({});
+  const [extraGroceryItems, setExtraGroceryItems] = useState([]);
+  const [newExtraItem, setNewExtraItem] = useState('');
+  const [copiedList, setCopiedList] = useState(false);
 
   const startEdit = (day) => {
     const data = planner[day];
@@ -80,6 +90,15 @@ export const WeeklyPlanner = () => {
             Organize daily meal profiles, vegetable integration systems, and veg/non-veg status.
           </p>
         </div>
+
+        {/* Generate Grocery List Button */}
+        <button
+          onClick={() => setIsGroceryOpen(true)}
+          className="flex items-center justify-center space-x-2 bg-cyan-400 hover:bg-cyan-500 text-darkBg text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-cyan-400/10 cursor-pointer"
+        >
+          <Utensils className="w-4 h-4 stroke-[2.5]" />
+          <span>Generate Grocery List</span>
+        </button>
       </div>
 
       {/* Grid of days */}
@@ -198,7 +217,7 @@ export const WeeklyPlanner = () => {
                         onChange={(e) => setBreakfast(e.target.value)}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-luxuryGold/40"
                       >
-                        {mealLibrary.breakfast.map(meal => (
+                        {(meals.breakfast || []).map(meal => (
                           <option key={meal.id} value={meal.name} className="bg-darkBg text-white">{meal.name}</option>
                         ))}
                       </select>
@@ -212,7 +231,7 @@ export const WeeklyPlanner = () => {
                         onChange={(e) => setLunch(e.target.value)}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-luxuryGold/40"
                       >
-                        {mealLibrary.lunch.map(meal => (
+                        {(meals.lunch || []).map(meal => (
                           <option key={meal.id} value={meal.name} className="bg-darkBg text-white">{meal.name}</option>
                         ))}
                       </select>
@@ -226,7 +245,7 @@ export const WeeklyPlanner = () => {
                         onChange={(e) => setDinner(e.target.value)}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-luxuryGold/40"
                       >
-                        {mealLibrary.dinner.map(meal => (
+                        {(meals.dinner || []).map(meal => (
                           <option key={meal.id} value={meal.name} className="bg-darkBg text-white">{meal.name}</option>
                         ))}
                       </select>
@@ -294,6 +313,259 @@ export const WeeklyPlanner = () => {
           );
         })}
       </div>
+
+      {/* Grocery Helper Methods & Panel */}
+      {(() => {
+        const generateGroceryList = () => {
+          const list = [];
+          
+          weekdays.forEach(day => {
+            const dayData = planner[day];
+            if (!dayData) return;
+            
+            const mealsForDay = [
+              { name: dayData.breakfast, category: 'breakfast' },
+              { name: dayData.lunch, category: 'lunch' },
+              { name: dayData.dinner, category: 'dinner' }
+            ];
+            
+            mealsForDay.forEach(item => {
+              if (!item.name) return;
+              const mealObj = meals[item.category]?.find(m => m.name === item.name);
+              if (mealObj && mealObj.ingredients) {
+                mealObj.ingredients.forEach(ing => {
+                  if (!list.includes(ing)) {
+                    list.push(ing);
+                  }
+                });
+              }
+            });
+            
+            if (dayData.fruit && dayData.fruit !== 'None' && dayData.fruit.trim() !== '') {
+              const fruitIng = `${dayData.fruit} (Fruit)`;
+              if (!list.includes(fruitIng)) {
+                list.push(fruitIng);
+              }
+            }
+          });
+          
+          return list;
+        };
+
+        const toggleGroceryCheck = (item) => {
+          setCheckedStatus(prev => ({
+            ...prev,
+            [item]: !prev[item]
+          }));
+        };
+
+        const addExtraGroceryItem = (e) => {
+          e.preventDefault();
+          if (newExtraItem.trim() !== '') {
+            setExtraGroceryItems(prev => [...prev, newExtraItem.trim()]);
+            setNewExtraItem('');
+          }
+        };
+
+        const removeExtraGroceryItem = (index) => {
+          setExtraGroceryItems(prev => prev.filter((_, i) => i !== index));
+        };
+
+        const copyListToClipboard = () => {
+          const checkedItems = [];
+          const uncheckedItems = [];
+          
+          const allIngredients = [...generateGroceryList(), ...extraGroceryItems];
+          
+          allIngredients.forEach(item => {
+            if (checkedStatus[item]) {
+              checkedItems.push(`[x] ${item}`);
+            } else {
+              uncheckedItems.push(`[ ] ${item}`);
+            }
+          });
+          
+          const text = `MAYUR'S SHOPPING LIST:\n\nTO BUY:\n${uncheckedItems.join('\n')}\n\nALREADY HAVE:\n${checkedItems.join('\n')}`;
+          navigator.clipboard.writeText(text);
+          setCopiedList(true);
+          setTimeout(() => setCopiedList(false), 2000);
+        };
+
+        return (
+          <AnimatePresence>
+            {isGroceryOpen && (
+              <div className="fixed inset-0 z-50 flex justify-end">
+                {/* Backdrop Overlay */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setIsGroceryOpen(false)}
+                  className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+                />
+                
+                {/* Drawer Panel */}
+                <motion.div
+                  initial={{ x: '100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '100%' }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                  className="glass-panel w-full max-w-md border-l border-white/10 h-screen bg-[#0F1117]/95 shadow-2xl relative z-10 flex flex-col justify-between"
+                >
+                  {/* Drawer Header */}
+                  <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-1.5 rounded-lg bg-cyan-400/10 text-cyan-400">
+                        <Utensils className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-lg tracking-wide">Grocery Checklist</h3>
+                        <p className="text-[10px] text-cyan-400 font-semibold uppercase tracking-widest font-mono">Consolidated Ingredients</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsGroceryOpen(false)}
+                      className="text-white/40 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Drawer Content */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+                    
+                    {/* Info Tip */}
+                    <div className="p-3 bg-cyan-400/5 border border-cyan-400/10 rounded-xl text-[11px] text-cyan-300/80 leading-relaxed flex items-start space-x-2">
+                      <Sparkles className="w-4 h-4 shrink-0 mt-0.5 animate-pulse-slow" />
+                      <span>
+                        Aggregated list of raw ingredients compiled from all meals planned in your 7-day diet calendar.
+                      </span>
+                    </div>
+
+                    {/* Ingredients Checkable List */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-white text-xs uppercase tracking-wider text-white/50 font-mono">Diet Ingredients</h4>
+                      
+                      {generateGroceryList().length > 0 ? (
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                          {generateGroceryList().map((item, idx) => {
+                            const isChecked = !!checkedStatus[item];
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => toggleGroceryCheck(item)}
+                                className={`w-full flex items-center justify-between p-3 rounded-xl border text-left text-xs transition-all duration-300 cursor-pointer ${
+                                  isChecked 
+                                    ? 'bg-white/[0.02] border-white/10 text-white/40 hover:border-white/20' 
+                                    : 'border-white/5 bg-white/[0.01] text-white hover:border-white/10'
+                                }`}
+                              >
+                                <span className={isChecked ? 'line-through' : 'font-medium'}>{item}</span>
+                                <div className={`w-4.5 h-4.5 rounded-md flex items-center justify-center border transition-all ${
+                                  isChecked ? 'bg-cyan-400 border-cyan-400' : 'border-white/20'
+                                }`}>
+                                  {isChecked && <Check className="w-3 h-3 text-darkBg stroke-[3.5]" />}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6 border border-dashed border-white/5 rounded-xl text-white/30 text-[11px]">
+                          No meals selected in the Weekly Planner yet.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Extra Shopping Items List */}
+                    <div className="space-y-3 border-t border-white/5 pt-5">
+                      <h4 className="font-semibold text-white text-xs uppercase tracking-wider text-white/50 font-mono">Extra Items</h4>
+                      
+                      {extraGroceryItems.length > 0 && (
+                        <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1 no-scrollbar">
+                          {extraGroceryItems.map((item, idx) => {
+                            const isChecked = !!checkedStatus[item];
+                            return (
+                              <div
+                                key={idx}
+                                className={`flex items-center justify-between p-3 rounded-xl border text-left text-xs transition-all duration-300 ${
+                                  isChecked 
+                                    ? 'bg-white/[0.02] border-white/10 text-white/40' 
+                                    : 'border-white/5 bg-white/[0.01] text-white'
+                                }`}
+                              >
+                                <button
+                                  onClick={() => toggleGroceryCheck(item)}
+                                  className="flex-1 text-left cursor-pointer"
+                                >
+                                  <span className={isChecked ? 'line-through' : 'font-medium'}>{item}</span>
+                                </button>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => removeExtraGroceryItem(idx)}
+                                    className="text-white/30 hover:text-rose-400 p-1 hover:bg-white/5 rounded cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => toggleGroceryCheck(item)}
+                                    className={`w-4.5 h-4.5 rounded-md flex items-center justify-center border transition-all cursor-pointer ${
+                                      isChecked ? 'bg-cyan-400 border-cyan-400' : 'border-white/20'
+                                    }`}
+                                  >
+                                    {isChecked && <Check className="w-3 h-3 text-darkBg stroke-[3.5]" />}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Add Extra Item Form */}
+                      <form onSubmit={addExtraGroceryItem} className="flex space-x-2">
+                        <input
+                          type="text"
+                          placeholder="Add custom item (e.g. Milk, Eggs)"
+                          value={newExtraItem}
+                          onChange={(e) => setNewExtraItem(e.target.value)}
+                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/35 focus:outline-none focus:border-cyan-400/40"
+                        />
+                        <button
+                          type="submit"
+                          className="bg-cyan-400 hover:bg-cyan-500 text-darkBg px-3 rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4 stroke-[2.5]" />
+                        </button>
+                      </form>
+                    </div>
+
+                  </div>
+
+                  {/* Drawer Footer */}
+                  <div className="px-6 py-5 border-t border-white/5 bg-white/[0.01] flex space-x-3">
+                    <button
+                      onClick={() => setIsGroceryOpen(false)}
+                      className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-2.5 rounded-xl transition-all text-xs cursor-pointer"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={copyListToClipboard}
+                      className="flex-1 bg-cyan-400 hover:bg-cyan-500 text-darkBg font-bold py-2.5 rounded-xl transition-all text-xs flex items-center justify-center space-x-1.5 shadow-lg shadow-cyan-400/10 cursor-pointer"
+                    >
+                      {copiedList ? <Check className="w-4 h-4 stroke-[2.5]" /> : <Copy className="w-4 h-4" />}
+                      <span>{copiedList ? 'Copied ✓' : 'Copy Shopping List'}</span>
+                    </button>
+                  </div>
+
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+        );
+      })()}
+
     </motion.div>
   );
 };

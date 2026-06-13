@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AppContext } from '../context/AppContext';
 import { GlassCard } from '../components/GlassCard';
 import { CircularProgress, HorizontalProgressBar } from '../components/ProgressBar';
+import { FirebaseSyncModal } from '../components/FirebaseSyncModal';
 import { 
   Plus, 
   Trash2, 
@@ -34,12 +35,15 @@ export const Dashboard = ({ setActiveTab }) => {
     togglePreWorkout,
     setPostWorkout,
     adjustWater,
-    adjustFruit
+    adjustFruit,
+    syncId,
+    dbStatus
   } = useContext(AppContext);
 
   const [customName, setCustomName] = useState('');
   const [customProtein, setCustomProtein] = useState('');
   const [isAddingCustom, setIsAddingCustom] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   const handleAddCustom = (e) => {
     e.preventDefault();
@@ -75,9 +79,29 @@ export const Dashboard = ({ setActiveTab }) => {
             Aesthetic bio-metrics & nutrition logging.
           </p>
         </div>
-        <div className="flex items-center space-x-3 text-xs glass-panel px-4 py-2 rounded-full border-white/5">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow"></span>
-          <span className="text-white/60 tracking-wider font-mono">CALORIES LOADED: {currentCalories} kcal</span>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Cloud Database Sync Pill */}
+          <button 
+            onClick={() => setIsSyncModalOpen(true)}
+            className="flex items-center space-x-2.5 text-xs glass-panel px-4 py-2 rounded-full border border-white/5 hover:border-white/10 hover:bg-white/[0.03] transition-all cursor-pointer animate-fade-in"
+          >
+            <span className={`w-2 h-2 rounded-full ${
+              dbStatus === 'connected' 
+                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] animate-pulse-slow' 
+                : dbStatus === 'connecting'
+                  ? 'bg-cyan-400 animate-spin-slow'
+                  : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse-slow'
+            }`}></span>
+            <span className="text-white/60 tracking-wider font-mono uppercase text-[10px]">
+              {dbStatus === 'connected' ? `Cloud: ${syncId}` : dbStatus === 'connecting' ? 'Connecting...' : 'Local Deck'}
+            </span>
+          </button>
+
+          {/* Calorie Pill */}
+          <div className="flex items-center space-x-2.5 text-xs glass-panel px-4 py-2 rounded-full border border-white/5">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse-slow"></span>
+            <span className="text-white/60 tracking-wider font-mono uppercase text-[10px]">CALORIES LOADED: {currentCalories} kcal</span>
+          </div>
         </div>
       </div>
 
@@ -455,6 +479,12 @@ export const Dashboard = ({ setActiveTab }) => {
           ))}
         </div>
       </div>
+
+      {/* Firebase Synchronization Settings Modal */}
+      <FirebaseSyncModal 
+        isOpen={isSyncModalOpen} 
+        onClose={() => setIsSyncModalOpen(false)} 
+      />
 
     </motion.div>
   );

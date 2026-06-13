@@ -1,11 +1,40 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { initialPlanner } from '../data/initialPlanner';
-import { db, isFirebaseConfigured } from '../firebase/config';
+import { mealLibrary } from '../data/mealLibrary';
+import { 
+  db, 
+  isFirebaseConfigured, 
+  getSavedFirebaseConfig, 
+  initializeFirebaseDynamically, 
+  testFirebaseConnection,
+  checkConfigValidity
+} from '../firebase/config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
+  // Cloud Sync & Custom Firebase config states
+  const [syncId, setSyncId] = useState(() => {
+    const saved = localStorage.getItem('aura_sync_id');
+    if (saved) return saved;
+    const newId = `mayur-sync-${Math.floor(1000 + Math.random() * 9000)}`;
+    localStorage.setItem('aura_sync_id', newId);
+    return newId;
+  });
+
+  const [activeConfig, setActiveConfig] = useState(() => {
+    return getSavedFirebaseConfig();
+  });
+
+  const [currentDb, setCurrentDb] = useState(() => {
+    return db;
+  });
+
+  const [dbStatus, setDbStatus] = useState(() => {
+    return db ? 'connected' : 'local';
+  });
+
   // Configurable targets
   const [targets, setTargets] = useState(() => {
     const saved = localStorage.getItem('aura_targets');
@@ -60,13 +89,30 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : initialPlanner;
   });
 
+  // Custom meals library additions
+  const [customMeals, setCustomMeals] = useState(() => {
+    const saved = localStorage.getItem('aura_custom_meals');
+    return saved ? JSON.parse(saved) : { breakfast: [], lunch: [], dinner: [] };
+  });
+
+  // Unified meals list containing static and custom entries
+  const meals = {
+    breakfast: [...mealLibrary.breakfast, ...(customMeals.breakfast || [])],
+    lunch: [...mealLibrary.lunch, ...(customMeals.lunch || [])],
+    dinner: [...mealLibrary.dinner, ...(customMeals.dinner || [])]
+  };
+
   // 1. Mount Effect: Fetch cloud data from Firestore if configured
   useEffect(() => {
-    if (!isFirebaseConfigured || !db) return;
+    if (!currentDb) {
+      setDbStatus('local');
+      return;
+    }
 
     const fetchCloudData = async () => {
+      setDbStatus('connecting');
       try {
-        const docRef = doc(db, "user_data", "dashboard_state");
+        const docRef = doc(currentDb, "user_data", syncId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -78,7 +124,9 @@ export const AppProvider = ({ children }) => {
           if (data.waterIntake) setWaterIntake(data.waterIntake);
           if (data.fruitIntake) setFruitIntake(data.fruitIntake);
           if (data.planner) setPlanner(data.planner);
+          if (data.customMeals) setCustomMeals(data.customMeals);
           console.log("✓ Cloud database loaded successfully.");
+          setDbStatus('connected');
         } else {
           console.log("No cloud data found. Creating default document in Firestore...");
           await setDoc(docRef, {
@@ -88,21 +136,24 @@ export const AppProvider = ({ children }) => {
             postWorkout,
             waterIntake,
             fruitIntake,
-            planner
+            planner,
+            customMeals
           });
+          setDbStatus('connected');
         }
       } catch (err) {
         console.error("Error reading from Firestore:", err);
+        setDbStatus('disconnected');
       }
     };
 
     fetchCloudData();
-  }, [db]);
+  }, [currentDb, syncId]);
 
-  // 2. Sync Effect: Save local states to Firestore (or LocalStorage as fallback)
+  // 2. Sync Effect: Save local states to Firestore & LocalStorage
   useEffect(() => {
-    if (isFirebaseConfigured && db) {
-      const docRef = doc(db, "user_data", "dashboard_state");
+    if (currentDb && dbStatus === 'connected') {
+      const docRef = doc(currentDb, "user_data", syncId);
       setDoc(docRef, {
         targets,
         proteinChecklist,
@@ -110,18 +161,107 @@ export const AppProvider = ({ children }) => {
         postWorkout,
         waterIntake,
         fruitIntake,
-        planner
-      }, { merge: true }).catch(err => console.error("Error writing to Firestore:", err));
-    } else {
-      localStorage.setItem('aura_targets', JSON.stringify(targets));
-      localStorage.setItem('aura_proteinChecklist', JSON.stringify(proteinChecklist));
-      localStorage.setItem('aura_preWorkout', JSON.stringify(preWorkout));
-      localStorage.setItem('aura_postWorkout', JSON.stringify(postWorkout));
-      localStorage.setItem('aura_waterIntake', JSON.stringify(waterIntake));
-      localStorage.setItem('aura_fruitIntake', JSON.stringify(fruitIntake));
-      localStorage.setItem('aura_planner', JSON.stringify(planner));
+        planner,
+        customMeals
+      }, { merge: true }).catch(err => {
+        console.error("Error writing to Firestore:", err);
+      });
     }
-  }, [targets, proteinChecklist, preWorkout, postWorkout, waterIntake, fruitIntake, planner, db]);
+
+    // Always backup locally as secondary persistent storage
+    localStorage.setItem('aura_targets', JSON.stringify(targets));
+    localStorage.setItem('aura_proteinChecklist', JSON.stringify(proteinChecklist));
+    localStorage.setItem('aura_preWorkout', JSON.stringify(preWorkout));
+    localStorage.setItem('aura_postWorkout', JSON.stringify(postWorkout));
+    localStorage.setItem('aura_waterIntake', JSON.stringify(waterIntake));
+    localStorage.setItem('aura_fruitIntake', JSON.stringify(fruitIntake));
+    localStorage.setItem('aura_planner', JSON.stringify(planner));
+    localStorage.setItem('aura_custom_meals', JSON.stringify(customMeals));
+    
+  }, [targets, proteinChecklist, preWorkout, postWorkout, waterIntake, fruitIntake, planner, customMeals, currentDb, dbStatus, syncId]);
+
+  // Firebase Config actions
+  const saveCustomFirebaseConfig = async (config, newSyncId) => {
+    const testResult = await testFirebaseConnection(config);
+    if (!testResult.success) {
+      return testResult;
+    }
+
+    localStorage.setItem('aura_custom_firebase_config', JSON.stringify(config));
+    localStorage.setItem('aura_sync_id', newSyncId);
+
+    const newDb = initializeFirebaseDynamically(config);
+    setActiveConfig(config);
+    setSyncId(newSyncId);
+    setCurrentDb(newDb);
+    setDbStatus(newDb ? 'connected' : 'local');
+
+    return { success: true };
+  };
+
+  const clearFirebaseConfig = () => {
+    localStorage.removeItem('aura_custom_firebase_config');
+    initializeFirebaseDynamically(null);
+    setActiveConfig(null);
+    setCurrentDb(null);
+    setDbStatus('local');
+  };
+
+  const uploadLocalDataToCloud = async () => {
+    if (!currentDb) return { success: false, message: "Database not connected." };
+    try {
+      const docRef = doc(currentDb, "user_data", syncId);
+      await setDoc(docRef, {
+        targets,
+        proteinChecklist,
+        preWorkout,
+        postWorkout,
+        waterIntake,
+        fruitIntake,
+        planner,
+        customMeals
+      });
+      return { success: true };
+    } catch (err) {
+      console.error("Error uploading local data:", err);
+      return { success: false, message: err.message || "Failed to upload data." };
+    }
+  };
+
+  const downloadCloudDataToLocal = async () => {
+    if (!currentDb) return { success: false, message: "Database not connected." };
+    try {
+      const docRef = doc(currentDb, "user_data", syncId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.targets) setTargets(data.targets);
+        if (data.proteinChecklist) setProteinChecklist(data.proteinChecklist);
+        if (data.preWorkout) setPreWorkout(data.preWorkout);
+        if (data.postWorkout) setPostWorkout(data.postWorkout);
+        if (data.waterIntake) setWaterIntake(data.waterIntake);
+        if (data.fruitIntake) setFruitIntake(data.fruitIntake);
+        if (data.planner) setPlanner(data.planner);
+        if (data.customMeals) setCustomMeals(data.customMeals);
+        return { success: true };
+      } else {
+        return { success: false, message: "No cloud data found for this Sync ID." };
+      }
+    } catch (err) {
+      console.error("Error downloading cloud data:", err);
+      return { success: false, message: err.message || "Failed to download data." };
+    }
+  };
+
+  const addCustomMeal = (category, meal) => {
+    setCustomMeals(prev => {
+      const updated = {
+        ...prev,
+        [category]: [...(prev[category] || []), { ...meal, id: `custom-${Date.now()}` }]
+      };
+      return updated;
+    });
+  };
 
   // Calculate current total protein consumed dynamically
   const [currentProtein, setCurrentProtein] = useState(67);
@@ -256,6 +396,17 @@ export const AppProvider = ({ children }) => {
       currentProtein,
       currentCarbs,
       currentCalories,
+      syncId,
+      setSyncId,
+      activeConfig,
+      dbStatus,
+      meals,
+      customMeals,
+      addCustomMeal,
+      saveCustomFirebaseConfig,
+      clearFirebaseConfig,
+      uploadLocalDataToCloud,
+      downloadCloudDataToLocal,
       toggleProteinChecklist,
       addCustomProteinItem,
       deleteProteinItem,
